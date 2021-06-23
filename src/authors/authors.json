@@ -1,1 +1,12 @@
-[{"id":"gvkvo22kkq8ldcyj","forname":"EDDY","surname":"Edmond","email":"ed@edmond.com","dateOfBirth":"01/01/01","avatar":"https://ui-avatars.com/api/?name=${forname}+${surname}","createdAt":"2021-06-22T22:00:47.322Z","updatedAt":"2021-06-22T22:36:13.735Z"}]
+[
+    {
+        "id": "gvkvo22kkq8ldcyj",
+        "forname": "EDDY",
+        "surname": "Edmond",
+        "email": "ed@edmond.com",
+        "dateOfBirth": "01/01/01",
+        "avatar": "https://ui-avatars.com/api/?name=${forname}+${surname}",
+        "createdAt": "2021-06-22T22:00:47.322Z",
+        "updatedAt": "2021-06-22T22:36:13.735Z"
+    }
+]
