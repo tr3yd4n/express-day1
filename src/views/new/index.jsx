@@ -4,14 +4,28 @@ import ReactQuill from "react-quill";
 import { Container, Form, Button } from "react-bootstrap";
 import "./styles.css";
 export default class NewBlogPost extends Component {
-  constructor(props) {
-    super(props);
-    this.state = { text: "" };
-    this.handleChange = this.handleChange.bind(this);
+
+  state = {
+    category: "",
+    title: "",
+    text: "",
   }
 
-  handleChange(value) {
-    this.setState({ text: value });
+  handleChange(e) {
+    const id = e.target.id
+    this.setState({
+      [id]: e.target.value
+    });
+  }
+
+  handleSubmit = async e => {
+    e.preventDefault()
+    console.log("hello")
+    //   const APIURLSearch = `http://localhost:3001/blogs/blogs.json`
+    //   console.log("apples")
+    //   const response = await fetch(APIURLSearch)
+    //   const blogs = await response.json()
+    //   blogs.push(this.state)
   }
 
   render() {
@@ -20,11 +34,11 @@ export default class NewBlogPost extends Component {
         <Form className="mt-5">
           <Form.Group controlId="blog-form" className="mt-3">
             <Form.Label>Title</Form.Label>
-            <Form.Control size="lg" placeholder="Title" />
+            <Form.Control size="lg" placeholder="Title" id="title" value={this.state.title} onChange={this.handleChange} />
           </Form.Group>
-          <Form.Group controlId="blog-category" className="mt-3">
+          <Form.Group controlId="blog-category" className="mt-3" id="category" value={this.state.category} onChange={this.handleChange}>
             <Form.Label>Category</Form.Label>
-            <Form.Control size="lg" as="select">
+            <Form.Control size="lg" as="select" >
               <option>Category1</option>
               <option>Category2</option>
               <option>Category3</option>
@@ -32,16 +46,12 @@ export default class NewBlogPost extends Component {
               <option>Category5</option>
             </Form.Control>
           </Form.Group>
-          <Form.Group controlId="blog-content" className="mt-3">
-            <Form.Label>Blog Content</Form.Label>
-            <ReactQuill
-              value={this.state.text}
-              onChange={this.handleChange}
-              className="new-blog-content"
-            />
+          <Form.Group className="mb-3" controlId="exampleForm.ControlTextarea1">
+            <Form.Label>Example textarea</Form.Label>
+            <Form.Control as="textarea" rows={3} id="text" value={this.state.text} onChange={this.handleChange} />
           </Form.Group>
-          <Form.Group className="d-flex mt-3 justify-content-end">
-            <Button type="reset" size="lg" variant="outline-dark">
+          <Form.Group className="d-flex mt-3 justify-content-end" >
+            <Button type="reset" size="lg" variant="outline-dark" onClick={this.handleSubmit}>
               Reset
             </Button>
             <Button
