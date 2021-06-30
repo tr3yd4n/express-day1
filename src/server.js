@@ -1,22 +1,46 @@
 import express from "express"
 import cors from "cors"
 import listEndpoints from "express-list-endpoints"
-import authorsRouter from "./authors/index.js"
-import blogsRouter from "./blogs/index.js"
+import authorsRoutes from "./authors/index.js"
+import { notFound, forbidden, catchAllErrorHandler } from "./errorHandlers.js"
+import blogsRoutes from "./blogs/index.js"
+import mongoose from 'mongoose'
+import sequelize from "./db/index.js"
 
 const server = express()
-const PORT = 3001
+const port = process.env.PORT
+console.log(process.env)
+
+
+
 
 server.use(cors())
 
 server.use(express.json())
 
-server.use("/authors", authorsRouter)
-server.use("/blogs", blogsRouter)
+// ROUTES
+
+server.use("/authors", authorsRoutes)
+
+server.use("/blogs", blogsRoutes)
+
+//  next(err) --> ERROR HANDLERS
+server.use(notFound)
+
+server.use(forbidden)
+
+server.use(catchAllErrorHandler)
 
 console.table(listEndpoints(server))
 
-server.listen(PORT, () => console.log("server is running on port", PORT))
+// mongoose.connect(process.env.MONGO_CONNECTION, { useNewUrlParser: true, useUnifiedTopology: true, useFindAndModify: false, })
+//     .then(server.listen(port, () => { console.log("Running on port", port) }))
+//     .catch((err) => console.log(err))
 
-server.on("error", (error) => console.log("server is not running due to", error))
+// server.listen(port, () => console.log('server is running on PORT ', port))
+sequelize.sync({ force: true }).then(() => {
+    console.log("Connection has been established")
+    server.listen(port, () => { console.log("Running on port", port) })
+
+}).catch((e) => console.log("Unable to establish connection:", e));
 

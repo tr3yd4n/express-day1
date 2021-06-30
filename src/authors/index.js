@@ -1,105 +1,125 @@
 import express from "express"
-import fs from "fs"
-import path, { dirname } from "path"
+import fs from "fs-extra"
+import { join, dirname, parse } from "path"
 import { fileURLToPath } from "url"
-import uniqid from "uniqid"
+import uniqid from 'uniqid'
 
-const fileName = fileURLToPath(import.meta.url)
-const directoryName = dirname(fileName)
-const authorsFilePath = path.join(directoryName, "authors.json")
-const router = express.Router()
+//create an express function declared as a router
+const authorsRoutes = express.Router()
+// folder path containing src converts path to url including json
+const authorsPath = join(dirname(fileURLToPath(import.meta.url)), "authors.json")
 
-//get all authors
-router.get('/', async (req, res, next) => {
-    try {
-        const fileAsBuffer = fs.readFileSync(authorsFilePath)
-        const fileAsString = fileAsBuffer.toString()
-        const fileAsJson = JSON.parse(fileAsString)
-        res.send(fileAsJson)
-        console.log(fileAsJson)
-    } catch (error) {
-        res.sendStatus(500).send({ message: error.message })
+// // Question 1 - DONE
+authorsRoutes.get('/', async (req, res) => { // /authors
+    //1. target authors.json grab entire list of authors from authors.json
+    const authors = fs.readFileSync(authorsPath)
+    // console.log(authors.JSON)
+
+    //2. convert into readable array
+    let parsedAuthors = JSON.parse(authors)
+
+    // ######## FILTER AUTHORS BY QUERIES
+    // ### url = http://localhost:3001/authors?name=steve
+    // ### url = http://localhost:3001/authors?age=42
+    // ### url = http://localhost:3001/authors?
+    console.log(req.query)
+    if (req.query.name) {
+        parsedAuthors = parsedAuthors.filter(author => author.name.toLowerCase().includes(req.query.name.toLowerCase()))
     }
+    if (req.query.age) {
+        parsedAuthors = parsedAuthors.filter(author => author.age === req.query.age)
+    }
+    if (req.query.surname) {
+        parsedAuthors = parsedAuthors.filter(author => {
+            if (author.surname) {
+                return author.surname.toLowerCase().includes(req.query.surname.toLowerCase())
+            } else {
+                console.log('SURNAME NOT DEFINED: ', author)
+            }
+        })
+    }
+    res.send(parsedAuthors)
 })
 
-//get single author
-router.get('/:id', async (req, res, next) => {
-    try {
-        const fileAsBuffer = fs.readFileSync(authorsFilePath)
-        const fileAsString = fileAsBuffer.toString()
-        const fileAsJson = JSON.parse(fileAsString)
-        const author = fileAsJson.find(author => author.id === req.params.id)
-        if (!author) {
-            res.sendStatus(404).send({ message: "Author with ${req.params.id} not found!" })
-        }
-        res.send(author)
-    } catch (error) {
-        res.sendStatus(500).send({ message: error.message })
-    }
+// // Question 3 - DONE 
+authorsRoutes.post('/', (req, res) => {
+
+    //1. read the body of the request
+    const newAuthor = { ...req.body, createdAt: new Date(), id: uniqid() }
+    console.log(newAuthor)
+
+    //2. read content of chosen json file (authors.json)
+    const authorsJSON = fs.readFileSync(authorsPath)
+    const authorsList = JSON.parse(authorsJSON)
+
+    //3. push the new author into the authors.json array
+    authorsList.push(newAuthor)
+
+    //4. write the array back into the JSON file as a string
+    fs.writeFileSync(authorsPath, JSON.stringify(authorsList))
+
+    //5. provide a response 201 = created
+    console.log(authorsList)
+    res.status(201).send(newAuthor.id)
+
 })
 
-//create author
-router.post('/', async (req, res, next) => {
-    try {
-        const { forname, surname, email, dateOfBirth } = req.body
-        const author = {
-            id: uniqid(),
-            forname,
-            surname,
-            email,
-            dateOfBirth,
-            avatar: 'https://ui-avatars.com/api/?name=${forname}+${surname}',
-            createdAt: new Date(),
-            updatedAt: new Date()
-        }
-        const fileAsBuffer = fs.readFileSync(authorsFilePath)
-        const fileAsString = fileAsBuffer.toString()
-        const fileAsJson = JSON.parse(fileAsString)
-        fileAsJson.push(author)
-        fs.writeFileSync(authorsFilePath, JSON.stringify(fileAsJson))
-        res.send(author)
+// Question 2
+authorsRoutes.get('/:id', (req, res) => {
 
-    } catch (error) {
-        res.send(500).send({ message: error.message })
-    }
+    //1. target authors.json grab entire list of authors from authors.json
+    const authors = fs.readFileSync(authorsPath)
+
+    //2. convert into readable array
+    const parsedAuthors = JSON.parse(authors)
+
+    //3. select author based on uniqid value
+    const author = parsedAuthors.find(a => a.id === req.params.id)
+
+    //4. send back to the front as response
+    res.status(200).send(author)
+    console.log(author)
+
 })
 
-//ammend author
-router.put('/:id', async (req, res, next) => {
-    try {
-        const fileAsBuffer = fs.readFileSync(authorsFilePath)
-        const fileAsString = fileAsBuffer.toString()
-        let fileAsJson = JSON.parse(fileAsString)
-        const authorIndex = fileAsJson.findIndex(author => author.id === req.params.id)
-        if (!authorIndex == -1) {
-            res.sendStatus(404).send({ message: "Author with ${req.params.id} not found!" })
-        }
-        const previousAuthorData = fileAsJson[authorIndex]
-        const changedAuthor = { ...previousAuthorData, ...req.body, updatedAt: new Date(), id: req.params.id }
-        fileAsJson[authorIndex] = changedAuthor
-        fs.writeFileSync(authorsFilePath, JSON.stringify(fileAsJson))
-        res.send(changedAuthor)
-    } catch (error) {
-        res.sendStatus(500).send({ message: error.message })
-    }
+// Question 4
+authorsRoutes.put('/:id', (req, res) => { //queries
+
+    //1. target authors.json grab entire list of authors from authors.json
+    const authors = fs.readFileSync(authorsPath)
+
+    //2. convert into readable array
+    const parsedAuthors = JSON.parse(authors)
+
+    //3. modify specified author and add to new array
+    const remainingAuthors = parsedAuthors.filter(author => author.id !== req.params.id)
+    const updatedAuthor = { ...req.body, id: req.params.id }
+    remainingAuthors.push(updatedAuthor)
+
+    //4. write (save) file with modified author
+    fs.writeFileSync(authorsPath, JSON.stringify(remainingAuthors))
+
+    //5. send response
+    res.send(updatedAuthor)
+
 })
 
-//delete author
-router.delete('/:id', async (req, res, next) => {
-    try {
-        const fileAsBuffer = fs.readFileSync(authorsFilePath)
-        const fileAsString = fileAsBuffer.toString()
-        let fileAsJson = JSON.parse(fileAsString)
-        const author = fileAsJson.find(author => author.id === req.params.id)
-        if (!author) {
-            res.sendStatus(404).send({ message: "Author with ${req.params.id} not found!" })
-        }
-        fileAsJson = fileAsJson.filter((author) => author.id !== req.params.id)
-        fs.writeFileSync(authorsFilePath, JSON.stringify(fileAsJson))
-        res.sendStatus(204).send({ message: "Deleted" })
-    } catch (error) {
-        res.sendStatus(500).send({ message: error.message })
-    }
+// Question 5
+authorsRoutes.delete('/:id', (req, res) => { //TREAT THIS AS AN INPUT CHECK!!!!!
+
+    //1. target authors.json grab entire list of authors from authors.json
+    const authors = fs.readFileSync(authorsPath)
+
+    //2. convert into readable array
+    const parsedAuthors = JSON.parse(authors)
+
+    //3. filter out specified id
+    const remainingAuthors = parsedAuthors.filter(author => author.id !== req.params.id)
+
+    //4. write the array back into the JSON file as a string
+    fs.writeFileSync(authorsPath, JSON.stringify(remainingAuthors))
+    res.status(200).send(remainingAuthors) // cant get this to log text or remaining on deletion but delete works
+
 })
 
-export default router
+export default authorsRoutes
